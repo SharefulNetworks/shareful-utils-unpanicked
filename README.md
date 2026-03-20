@@ -16,9 +16,15 @@ import (
 )
 
 func main() {
-	unpanicked.RunSafe(func() { panic("boom") }, func(rec any, stack []byte) {
+	// Protect the main goroutine by wrapping top-level logic.
+	unpanicked.RunSafe(MyTopLevelAppFunc, func(rec any, stack []byte) {
 		log.Printf("recovered: %v\n%s", rec, stack)
 	})
+}
+
+func MyTopLevelAppFunc() {
+	// Application code that might panic.
+	panic("boom")
 }
 ```
 
@@ -29,5 +35,38 @@ Additional wrappers:
 
 If you pass `nil` for `hook`, Unpanicked logs the recovered panic via `log.Printf` along with the stack trace.
 
+### Wrapping goroutines
+```go
+package main
+
+import (
+	"log"
+	"sync"
+
+	"github.com/SharefulNetworks/shareful-utils-unpanicked/unpanicked"
+)
+
+func main() {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go unpanicked.RunSafeWithWG(&wg, func() {
+		// Worker logic that might panic.
+		panic("worker boom")
+	}, func(rec any, stack []byte) {
+		log.Printf("worker recovered: %v\n%s", rec, stack)
+	})
+
+	wg.Wait()
+}
+```
+
+### Production hardening
+- Wrap entry-point logic in `main` to guard the main goroutine from fatal panics.
+- Wrap goroutine boundaries (e.g., `go unpanicked.RunSafe(func(){ ... }, hook)`) so panics in spawned workers are contained and reported.
+
 ## Development
 - Run tests: `go test ./...`
+
+## License
+MIT License.
