@@ -68,5 +68,8 @@ func main() {
 ## Development
 - Run tests: `go test ./...`
 
+## Authors
+Giles Thompson for and on behalf of Shareful.
+
 ## License
 MIT License.
